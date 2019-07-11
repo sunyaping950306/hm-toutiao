@@ -4,12 +4,12 @@
     <el-card class="login_box">
       <img src="../../assets/images/logo_index.png" alt="">
       <!-- 表单 -->
-      <el-form>
-        <el-form-item>
-          <el-input placeholder="请输入手机号"></el-input>
+      <el-form ref="loginForm" status-icon :model="loginForm" :rules="loginRules">
+        <el-form-item prop="mobile">
+          <el-input v-model="loginForm.mobile" placeholder="请输入手机号"></el-input>
         </el-form-item>
-        <el-form-item>
-          <el-input placeholder="请输入验证码" style="width:280px"></el-input>
+        <el-form-item prop="code">
+          <el-input v-model="loginForm.code" placeholder="请输入验证码" style="width:280px"></el-input>
           <el-button style="float:right">发送验证码</el-button>
         </el-form-item>
         <el-form-item>
@@ -17,7 +17,7 @@
           我已阅读并同意 <el-link type="primary">用户协议</el-link> 和 <el-link type="primary">隐私条款</el-link>
         </el-form-item>
         <el-form-item>
-          <el-button style="width:100%" type="primary">登 录</el-button>
+          <el-button style="width:100%" type="primary" @click="login()">登 录</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -25,10 +25,61 @@
 </template>
 
 <script>
+
 export default {
   data () {
+    // 校验手机号的
+    const checkMobile = (rule, value, callback) => {
+      // 校验逻辑（第一位以1开头，第二位3-9之间，剩下的是9位数字，$结束）
+      if (/^1[3-9]\d{9}$/.test(value)) {
+        callback()
+      } else {
+        callback(new Error('手机号格式错误'))
+      }
+    }
     return {
+      // 1.给表单绑定属性
+      // 表单对应的对象
+      loginForm: {
+        mobile: '13702094960',
+        code: '246810'
+      },
+      // 2.表单校验规则对象
+      loginRules: {
+        mobile: [
+          // 具体的校验规则 比如 是否必填 长度 格式...
+          { required: true, message: '请输入手机号', trigger: 'blur' },
+          { validator: checkMobile, trigger: 'blur' }
+        ],
+        code: [
+          { required: true, message: '请输入验证码', trigger: 'blur' },
+          { len: 6, message: '必须6位', trigger: 'blur' }
+        ]
+      },
       checked: true
+    }
+  },
+  methods: {
+    login () {
+      // 整体表单的校验
+      this.$refs.loginForm.validate((valid) => {
+        if (valid) {
+        // 如果校验成功 进行登录
+          this.$http.post('http://ttapi.research.itcast.cn/mp/v1_0/authorizations', this.loginForm)
+            // res是响应对象 不是响应数据，里边包含响应行，响应头，响应主体
+            .then(res => {
+              // res对象中的数据要靠res.data来拿，拿到后台返回的json内容（已经转换成了对象）
+              const data = res.data
+              console.log(data)
+              // 登录成功后，跳转到首页,登录状态保持
+              this.$router.push('/')
+            })
+            .catch(() => {
+              // 提示错误,使用消息提示组件
+              this.$message.error('用户名或密码错误')
+            })
+        }
+      })
     }
   }
 }
